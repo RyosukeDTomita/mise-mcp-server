@@ -68,7 +68,7 @@ Deno.test("MCP server should handle tools/call request", async () => {
     id: 3,
     method: "tools/call",
     params: {
-      name: "mise/listTasks",
+      name: "mise-list-tasks",
       arguments: {}
     }
   };

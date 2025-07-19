@@ -83,7 +83,7 @@ export class MCPServer {
   listTools(): Tool[] {
     return [
       {
-        name: "mise/listTasks",
+        name: "mise-list-tasks",
         description: "List all available mise tasks",
         inputSchema: {
           type: "object",
@@ -96,7 +96,7 @@ export class MCPServer {
         }
       },
       {
-        name: "mise/runTask",
+        name: "mise-run-task",
         description: "Run a specific mise task",
         inputSchema: {
           type: "object",
@@ -219,7 +219,7 @@ export class MCPServer {
   async handleToolCall(request: ToolCallRequest): Promise<ToolCallResponse> {
     try {
       switch (request.tool) {
-        case "mise/listTasks": {
+        case "mise-list-tasks": {
           const tasks = await this.listTasks();
           return {
             success: true,
@@ -227,7 +227,7 @@ export class MCPServer {
           };
         }
         
-        case "mise/runTask": {
+        case "mise-run-task": {
           const { task, args } = request.arguments as { task: string; args?: string[] };
           if (!task) {
             return {
