@@ -1,0 +1,23 @@
+{
+  "name": "mise-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for mise task runner",
+  "type": "module",
+  "bin": {
+    "mise-mcp-server": "./bin/mise-mcp-server.js"
+  },
+  "scripts": {
+    "start": "node ./bin/mise-mcp-server.js"
+  },
+  "keywords": [
+    "mcp",
+    "mise",
+    "task-runner",
+    "model-context-protocol"
+  ],
+  "author": "RyosukeDTomita",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

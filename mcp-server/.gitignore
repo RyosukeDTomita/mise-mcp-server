@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Deno cache
+.deno/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Compiled files
+*.js.map
+dist/
+build/
