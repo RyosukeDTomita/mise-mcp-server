@@ -1,0 +1,68 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+
+      - name: Build binaries
+        run: |
+          cd mcp-server
+          mkdir -p bin
+          
+          # Build for Linux x64
+          deno compile \
+            --allow-run \
+            --allow-read \
+            --target x86_64-unknown-linux-gnu \
+            --output bin/mise-mcp-server-linux-x64 \
+            main.ts
+          
+          # Build for macOS x64
+          deno compile \
+            --allow-run \
+            --allow-read \
+            --target x86_64-apple-darwin \
+            --output bin/mise-mcp-server-darwin-x64 \
+            main.ts
+          
+          # Build for macOS ARM64
+          deno compile \
+            --allow-run \
+            --allow-read \
+            --target aarch64-apple-darwin \
+            --output bin/mise-mcp-server-darwin-arm64 \
+            main.ts
+          
+          # Build for Windows x64
+          deno compile \
+            --allow-run \
+            --allow-read \
+            --target x86_64-pc-windows-msvc \
+            --output bin/mise-mcp-server-windows-x64.exe \
+            main.ts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            mcp-server/bin/mise-mcp-server-linux-x64
+            mcp-server/bin/mise-mcp-server-darwin-x64
+            mcp-server/bin/mise-mcp-server-darwin-arm64
+            mcp-server/bin/mise-mcp-server-windows-x64.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

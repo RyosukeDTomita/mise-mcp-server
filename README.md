@@ -52,28 +52,39 @@ curl https://mise.jdx.dev/install.sh | sh
 
 ### Running the MCP Server
 
-#### Method 1: Direct GitHub Raw URL (Recommended)
+#### Method 1: Auto-download and run (Recommended)
 
 ```shell
-# Download and run directly
-curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/mcp-server/standalone.js | node
+# Download and run the latest binary automatically
+curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/run.sh | bash
 ```
 
-#### Method 2: Using the shell wrapper
+#### Method 2: Manual installation
 
 ```shell
-# Download and run the wrapper script
-curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/run-server.sh | bash
+# Install to ~/.local/bin and run
+curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/install-and-run.sh | bash
 ```
 
-#### Method 3: Running locally with Deno
+#### Method 3: Manual download from releases
+
+1. Go to [GitHub Releases](https://github.com/RyosukeDTomita/mise-mcp-server/releases)
+2. Download the binary for your platform:
+   - `mise-mcp-server-linux-x64` (Linux)
+   - `mise-mcp-server-darwin-x64` (macOS Intel)
+   - `mise-mcp-server-darwin-arm64` (macOS Apple Silicon)
+   - `mise-mcp-server-windows-x64.exe` (Windows)
+3. Make it executable: `chmod +x mise-mcp-server-*`
+4. Run: `./mise-mcp-server-*`
+
+#### Method 4: Running locally with Deno
 
 ```shell
 cd mcp-server
 deno run --allow-run --allow-read main.ts
 ```
 
-**Prerequisites**: You need `mise` and `node` installed on your system.
+**Prerequisites**: You need `mise` installed on your system.
 
 ### Available Tools
 
@@ -161,40 +172,52 @@ Add one of the following to your Claude Desktop configuration file:
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-#### Option 1: Using shell wrapper (Recommended)
+#### Option 1: Auto-download binary (Recommended)
 
 ```json
 {
   "mcpServers": {
     "mise-tasks": {
       "command": "bash",
-      "args": ["-c", "curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/run-server.sh | bash"]
+      "args": ["-c", "curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/run.sh | bash"]
     }
   }
 }
 ```
 
-#### Option 2: Direct Node.js execution
+#### Option 2: Install and run
 
 ```json
 {
   "mcpServers": {
     "mise-tasks": {
-      "command": "bash", 
-      "args": ["-c", "curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/mcp-server/standalone.js | node"]
+      "command": "bash",
+      "args": ["-c", "curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/install-and-run.sh | bash"]
     }
   }
 }
 ```
 
-#### Option 3: Local download approach
+#### Option 3: Use pre-downloaded binary
 
 ```json
 {
   "mcpServers": {
     "mise-tasks": {
-      "command": "sh",
-      "args": ["-c", "curl -s https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/mcp-server/standalone.js -o /tmp/mise-mcp.js && node /tmp/mise-mcp.js"]
+      "command": "/path/to/downloaded/mise-mcp-server-linux-x64"
+    }
+  }
+}
+```
+
+#### Option 4: Windows users
+
+```json
+{
+  "mcpServers": {
+    "mise-tasks": {
+      "command": "powershell",
+      "args": ["-Command", "& { Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/RyosukeDTomita/mise-mcp-server/main/run.sh' -UseBasicParsing | Select-Object -ExpandProperty Content | bash }"]
     }
   }
 }

@@ -26,3 +26,4 @@ yarn-error.log*
 
 mise.toml
 
+mcp-server/bin/*
