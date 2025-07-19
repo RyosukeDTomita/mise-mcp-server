@@ -33,11 +33,11 @@ Deno.test("MCPServer should list available tools", () => {
   assertInstanceOf(tools, Array);
   assertEquals(tools.length, 2);
   
-  const listTasksTool = tools.find(tool => tool.name === "mise/listTasks");
+  const listTasksTool = tools.find(tool => tool.name === "mise-list-tasks");
   assertExists(listTasksTool);
   assertEquals(listTasksTool.description, "List all available mise tasks");
   
-  const runTaskTool = tools.find(tool => tool.name === "mise/runTask");
+  const runTaskTool = tools.find(tool => tool.name === "mise-run-task");
   assertExists(runTaskTool);
   assertEquals(runTaskTool.description, "Run a specific mise task");
 });
@@ -95,7 +95,7 @@ Deno.test("runTask should handle task failure", async () => {
 Deno.test("handleToolCall should process listTasks request", async () => {
   const server = new MCPServer();
   const request = {
-    tool: "mise/listTasks",
+    tool: "mise-list-tasks",
     arguments: {}
   };
   
@@ -109,7 +109,7 @@ Deno.test("handleToolCall should process listTasks request", async () => {
 Deno.test("handleToolCall should process runTask request", async () => {
   const server = new MCPServer();
   const request = {
-    tool: "mise/runTask",
+    tool: "mise-run-task",
     arguments: {
       task: "echo",
       args: ["Hello from MCP"]

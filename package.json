@@ -1,6 +1,6 @@
 {
   "name": "mise-mcp-server",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "MCP server for mise task runner - Compiled binary distribution",
   "type": "commonjs",
   "bin": {
