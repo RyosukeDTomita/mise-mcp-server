@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "mise-tasks": {
+      "command": "npx",
+      "args": ["-y", "github:RyosukeDTomita/mise-mcp-server/mcp-server"]
+    }
+  },
+}

@@ -6,30 +6,38 @@ async function main() {
   
   // MCP servers communicate via stdin/stdout
   const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
   
-  for await (const line of readLines(Deno.stdin)) {
-    try {
-      const request = JSON.parse(line);
-      const response = await server.handleRequest(request);
+  try {
+    for await (const line of readLines(Deno.stdin)) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
       
-      // Send response to stdout
-      const responseText = JSON.stringify(response) + "\n";
-      await Deno.stdout.write(encoder.encode(responseText));
-    } catch (error) {
-      // Send error response
-      const errorResponse = {
-        jsonrpc: "2.0",
-        id: null,
-        error: {
-          code: -32700,
-          message: "Parse error",
-          data: error instanceof Error ? error.message : "Unknown error"
-        }
-      };
-      const responseText = JSON.stringify(errorResponse) + "\n";
-      await Deno.stdout.write(encoder.encode(responseText));
+      try {
+        const request = JSON.parse(trimmedLine);
+        const response = await server.handleRequest(request);
+        
+        // Send response to stdout
+        const responseText = JSON.stringify(response) + "\n";
+        await Deno.stdout.write(encoder.encode(responseText));
+      } catch (error) {
+        // Send error response
+        const errorResponse = {
+          jsonrpc: "2.0",
+          id: null,
+          error: {
+            code: -32700,
+            message: "Parse error",
+            data: error instanceof Error ? error.message : "Unknown error"
+          }
+        };
+        const responseText = JSON.stringify(errorResponse) + "\n";
+        await Deno.stdout.write(encoder.encode(responseText));
+      }
     }
+  } catch (error) {
+    // Log to stderr for debugging
+    const errorMsg = `Main loop error: ${error instanceof Error ? error.message : "Unknown error"}\n`;
+    await Deno.stderr.write(encoder.encode(errorMsg));
   }
 }
 

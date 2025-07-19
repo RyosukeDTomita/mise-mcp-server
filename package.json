@@ -1,0 +1,50 @@
+{
+  "name": "mise-mcp-server",
+  "version": "0.2.0",
+  "description": "MCP server for mise task runner - Compiled binary distribution",
+  "type": "commonjs",
+  "bin": {
+    "mise-mcp-server": "./mcp-server/simple-test.js"
+  },
+  "scripts": {
+    "start": "node ./mcp-server/wrapper.js",
+    "test": "node ./mcp-server/test-mcp.js",
+    "build": "cd mcp-server && deno task build",
+    "build:single": "cd mcp-server && deno task compile",
+    "clean": "cd mcp-server && deno task clean"
+  },
+  "files": [
+    "mcp-server/bin/",
+    "mcp-server/wrapper.js",
+    "mcp-server/*.ts",
+    "mcp-server/*.json",
+    "README.md",
+    "CLAUDE.md"
+  ],
+  "keywords": [
+    "mcp",
+    "mise",
+    "task-runner",
+    "model-context-protocol",
+    "binary"
+  ],
+  "author": "RyosukeDTomita",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RyosukeDTomita/mise-mcp-server.git"
+  },
+  "homepage": "https://github.com/RyosukeDTomita/mise-mcp-server#readme"
+}
