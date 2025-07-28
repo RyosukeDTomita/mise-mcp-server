@@ -1,4 +1,4 @@
-import { MiseMCPServer } from "./mcp_server_sdk.ts";
+import { MiseMCPServer } from "./mcp_server.ts";
 
 async function main() {
   const server = new MiseMCPServer();

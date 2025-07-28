@@ -1,49 +1,13 @@
 import { assertEquals, assertExists, assertInstanceOf } from "@std/assert";
-import { MCPServer } from "./mcp_server.ts";
+import { MiseMCPServer } from "./mcp_server.ts";
 
-Deno.test("MCPServer should be initialized", () => {
-  const server = new MCPServer();
+Deno.test("MiseMCPServer should be initialized", () => {
+  const server = new MiseMCPServer();
   assertExists(server);
 });
 
-Deno.test("MCPServer should have proper info", () => {
-  const server = new MCPServer();
-  const info = server.getInfo();
-  
-  assertEquals(info.name, "mise-task-server");
-  assertEquals(info.version, "0.1.0");
-  assertEquals(info.protocolVersion, "0.1.0");
-});
-
-Deno.test("MCPServer should start and listen", async () => {
-  const server = new MCPServer();
-  
-  await server.start();
-  
-  assertEquals(server.isRunning(), true);
-  
-  await server.stop();
-  assertEquals(server.isRunning(), false);
-});
-
-Deno.test("MCPServer should list available tools", () => {
-  const server = new MCPServer();
-  const tools = server.listTools();
-  
-  assertInstanceOf(tools, Array);
-  assertEquals(tools.length, 2);
-  
-  const listTasksTool = tools.find(tool => tool.name === "mise-list-tasks");
-  assertExists(listTasksTool);
-  assertEquals(listTasksTool.description, "List all available mise tasks");
-  
-  const runTaskTool = tools.find(tool => tool.name === "mise-run-task");
-  assertExists(runTaskTool);
-  assertEquals(runTaskTool.description, "Run a specific mise task");
-});
-
 Deno.test("listTasks should return available mise tasks", async () => {
-  const server = new MCPServer();
+  const server = new MiseMCPServer();
   const tasks = await server.listTasks();
   
   assertInstanceOf(tasks, Array);
@@ -60,7 +24,7 @@ run = "deno test"
 depends = ["build"]
 `;
   
-  const server = new MCPServer();
+  const server = new MiseMCPServer();
   const tasks = await server.parseMiseTomlTasks(testToml);
   
   assertEquals(tasks.length, 2);
@@ -75,7 +39,7 @@ depends = ["build"]
 });
 
 Deno.test("runTask should execute a mise task", async () => {
-  const server = new MCPServer();
+  const server = new MiseMCPServer();
   const result = await server.runTask("echo", ["Hello", "World"]);
   
   assertExists(result);
@@ -84,7 +48,7 @@ Deno.test("runTask should execute a mise task", async () => {
 });
 
 Deno.test("runTask should handle task failure", async () => {
-  const server = new MCPServer();
+  const server = new MiseMCPServer();
   const result = await server.runTask("nonexistent-command", []);
   
   assertExists(result);
@@ -92,33 +56,119 @@ Deno.test("runTask should handle task failure", async () => {
   assertExists(result.error);
 });
 
-Deno.test("handleToolCall should process listTasks request", async () => {
-  const server = new MCPServer();
-  const request = {
-    tool: "mise-list-tasks",
-    arguments: {}
-  };
+// NEW TDD TESTS: Dynamic tool listing from mise.toml tasks
+
+Deno.test("MCP server should list mise.toml tasks as individual tools", async () => {
+  // Create a temporary mise.toml file for testing
+  const testToml = `
+[tasks.build]
+run = "deno compile main.ts"
+description = "Build the project"
+
+[tasks.test]  
+run = "deno test"
+description = "Run tests"
+
+[tasks.dev]
+run = "deno run --watch main.ts"
+description = "Start development server"
+`;
   
-  const response = await server.handleToolCall(request);
+  // Write test file
+  await Deno.writeTextFile("./test-mise.toml", testToml);
   
-  assertExists(response);
-  assertEquals(response.success, true);
-  assertInstanceOf(response.result, Array);
+  try {
+    const server = new MiseMCPServer();
+    
+    // Mock the server's listTools method to use our test directory
+    const originalListTasks = server.listTasks.bind(server);
+    server.listTasks = async () => {
+      const tomlContent = await Deno.readTextFile("./test-mise.toml");
+      return await server.parseMiseTomlTasks(tomlContent);
+    };
+    
+    // Get tools from MCP server
+    const toolsResponse = await server.getTools();
+    const tools = toolsResponse.tools;
+    
+    // Should have 3 dynamic tools (build, test, dev)
+    assertEquals(tools.length, 3);
+    
+    // Check build tool
+    const buildTool = tools.find(tool => tool.name === "build");
+    assertExists(buildTool);
+    assertEquals(buildTool.description, "Build the project");
+    
+    // Check test tool  
+    const testTool = tools.find(tool => tool.name === "test");
+    assertExists(testTool);
+    assertEquals(testTool.description, "Run tests");
+    
+    // Check dev tool
+    const devTool = tools.find(tool => tool.name === "dev");
+    assertExists(devTool);
+    assertEquals(devTool.description, "Start development server");
+    
+  } finally {
+    // Clean up test file
+    try {
+      await Deno.remove("./test-mise.toml");
+    } catch {
+      // File might not exist
+    }
+  }
 });
 
-Deno.test("handleToolCall should process runTask request", async () => {
-  const server = new MCPServer();
-  const request = {
-    tool: "mise-run-task",
-    arguments: {
-      task: "echo",
-      args: ["Hello from MCP"]
-    }
-  };
+Deno.test("MCP server should execute mise tasks via dynamic tools", async () => {
+  const server = new MiseMCPServer();
   
-  const response = await server.handleToolCall(request);
+  // Test calling a command that should work (echo is usually available)
+  const response = await server.callTool({
+    name: "echo",
+    arguments: { args: ["Hello", "from", "dynamic", "tool"] }
+  });
   
   assertExists(response);
   assertEquals(response.success, true);
-  assertExists(response.result);
+  assertExists(response.content);
+  assertEquals(response.content.length, 1);
+  assertEquals(response.content[0].type, "text");
+});
+
+Deno.test("Dynamic tools should have proper input schema", async () => {
+  const testToml = `
+[tasks.build]
+run = "deno compile main.ts"
+description = "Build the project"
+`;
+  
+  // Write test file
+  await Deno.writeTextFile("./test-mise.toml", testToml);
+  
+  try {
+    const server = new MiseMCPServer();
+    
+    // Mock the server's listTasks method
+    const originalListTasks = server.listTasks.bind(server);
+    server.listTasks = async () => {
+      const tomlContent = await Deno.readTextFile("./test-mise.toml");
+      return await server.parseMiseTomlTasks(tomlContent);
+    };
+    
+    const toolsResponse = await server.getTools();
+    const buildTool = toolsResponse.tools.find(tool => tool.name === "build");
+    
+    assertExists(buildTool);
+    assertExists(buildTool.inputSchema);
+    assertEquals(buildTool.inputSchema.type, "object");
+    assertExists(buildTool.inputSchema.properties);
+    
+  } finally {
+    // Clean up test file
+    try {
+      await Deno.remove("./test-mise.toml");
+    } catch {
+      // File might not exist
+    }
+  }
 });
