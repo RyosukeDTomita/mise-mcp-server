@@ -2,19 +2,17 @@
   "tasks": {
     "dev": "deno run --watch main.ts",
     "test": "deno test --allow-run --allow-read --allow-write",
-    "test:watch": "deno test --watch --allow-run --allow-read --allow-write",
-    "compile": "deno compile --allow-run --allow-read --output bin/mise-mcp-server-linux-x64 main.ts",
-    "compile:all": "deno task compile:linux && deno task compile:macos-intel && deno task compile:macos-arm && deno task compile:windows",
-    "compile:linux": "deno compile --allow-run --allow-read --target x86_64-unknown-linux-gnu --output bin/mise-mcp-server-linux-x64 main.ts",
-    "compile:macos-intel": "deno compile --allow-run --allow-read --target x86_64-apple-darwin --output bin/mise-mcp-server-darwin-x64 main.ts",
-    "compile:macos-arm": "deno compile --allow-run --allow-read --target aarch64-apple-darwin --output bin/mise-mcp-server-darwin-arm64 main.ts",
-    "compile:windows": "deno compile --allow-run --allow-read --target x86_64-pc-windows-msvc --output bin/mise-mcp-server-win-x64.exe main.ts",
-    "build": "mkdir -p bin && deno task compile:all",
-    "clean": "rm -rf bin/*"
+    "test:watch": "deno test --watch --allow-run --allow-read --allow-write"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
     "@std/toml": "jsr:@std/toml@1",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.0.0"
+  },
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   }
 }

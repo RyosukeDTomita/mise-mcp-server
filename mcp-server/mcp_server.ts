@@ -1,26 +1,11 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
-  ListToolsRequestSchema,
   CallToolRequestSchema,
+  ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { parse } from "@std/toml";
 
-interface Task {
-  name: string;
-  description?: string;
-  dependencies?: string[];
-}
-
-interface MiseToml {
-  tasks?: {
-    [key: string]: {
-      run?: string;
-      description?: string;
-      depends?: string[];
-    };
-  };
-}
+import { createToolFromTask, listTasks, runTask } from "./mise.ts";
 
 export class MiseMCPServer {
   private server: Server;
@@ -35,12 +20,15 @@ export class MiseMCPServer {
         capabilities: {
           tools: {},
         },
-      }
+      },
     );
 
     this.setupHandlers();
   }
 
+  /**
+   * constructor作成時にハンドラーを登録し、MCP Clientからのリクエストに応じた処理を行う。
+   */
   private setupHandlers() {
     // Handle tool listing
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -49,163 +37,29 @@ export class MiseMCPServer {
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      return await this.handleToolCall(request.params.name, request.params.arguments);
+      return await this.handleToolCall(
+        request.params.name,
+        request.params.arguments,
+      );
     });
   }
 
   /**
-   * miseのtaskの一覧を返す。
-   * @param directory 
-   * @returns 
+   * MCP Serverで使用可能なツールの一覧をを返す。
+   * @returns {}
    */
-  async listTasks(directory?: string): Promise<Task[]> {
-    const searchDir = directory || Deno.cwd();
-    const tasks: Task[] = [];
-
-    // Look for mise.toml file
-    const miseTomlPath = `${searchDir}/mise.toml`;
-    try {
-      const tomlContent = await Deno.readTextFile(miseTomlPath);
-      const parsedTasks = await this.parseMiseTomlTasks(tomlContent);
-      tasks.push(...parsedTasks);
-    } catch {
-      // mise.toml not found or cannot be read
-      // TODO: キャッチしてなにもしないの微妙じゃね?
-    }
-
-    // Look for file tasks in mise-tasks directory
-    const miseTasksDir = `${searchDir}/mise-tasks`;
-    try {
-      for await (const entry of Deno.readDir(miseTasksDir)) {
-        if (entry.isFile) {
-          tasks.push({
-            name: entry.name,
-            description: `File task: ${entry.name}`,
-          });
-        }
-      }
-    } catch {
-      // mise-tasks directory not found
-    }
-
-    return tasks;
-  }
-
-  /**
-   * tomlをパースしてMCPのlist/toolsで使える形式にする。
-   * @param tomlContent 
-   * @returns 
-   */
-  async parseMiseTomlTasks(tomlContent: string): Promise<Task[]> {
-    const parsed = parse(tomlContent) as MiseToml;
-    const tasks: Task[] = [];
-
-    if (parsed.tasks) {
-      for (const [name, config] of Object.entries(parsed.tasks)) {
-        tasks.push({
-          name,
-          description: config.description,
-          dependencies: config.depends,
-        });
-      }
-    }
-
-    return tasks;
-  }
-
-  async runTask(taskName: string, args: string[] = []): Promise<{
-    success: boolean;
-    output?: string;
-    error?: string;
-  }> {
-    try {
-      // For testing purposes, if taskName is 'echo' or 'nonexistent-command',
-      // run them directly. Otherwise, use mise to run the task
-      if (taskName === "echo" || taskName === "nonexistent-command") {
-        const command = new Deno.Command(taskName, {
-          args,
-          stdout: "piped",
-          stderr: "piped",
-        });
-
-        const { code, stdout, stderr } = await command.output();
-
-        const output = new TextDecoder().decode(stdout);
-        const error = new TextDecoder().decode(stderr);
-
-        return {
-          success: code === 0,
-          output: output || undefined,
-          error: code !== 0 ? error || "Task failed" : undefined,
-        };
-      }
-
-      // Use mise to run the task
-      const command = new Deno.Command("mise", {
-        args: ["run", taskName, ...args],
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const { code, stdout, stderr } = await command.output();
-
-      const output = new TextDecoder().decode(stdout);
-      const error = new TextDecoder().decode(stderr);
-
-      return {
-        success: code === 0,
-        output: output || undefined,
-        error: code !== 0 ? error || "Task failed" : undefined,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }
-
-  async start() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-  }
-
   async getTools() {
-    const tasks = await this.listTasks();
-    
-    return {
-      tools: tasks.map(task => this.createToolFromTask(task)),
-    };
-  }
+    const tasks = await listTasks();
 
-  private createToolFromTask(task: Task) {
     return {
-      name: task.name,
-      description: task.description || `Run ${task.name} task`,
-      inputSchema: this.createTaskInputSchema(),
-    };
-  }
-
-  private createTaskInputSchema() {
-    return {
-      type: "object",
-      properties: {
-        args: {
-          type: "array",
-          items: {
-            type: "string",
-          },
-          description: "Arguments to pass to the task",
-        },
-      },
+      tools: tasks.map((task) => createToolFromTask(task)),
     };
   }
 
   private async handleToolCall(toolName: string, args: any) {
     try {
-      // Handle legacy tools for backward compatibility
       if (toolName === "mise-list-tasks") {
-        return await this.handleListTasksTool(args?.directory);
+        return await this.handleListTasksTool(args.directory);
       }
 
       if (toolName === "mise-run-task") {
@@ -219,16 +73,18 @@ export class MiseMCPServer {
         content: [
           {
             type: "text",
-            text: `Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`,
+            text: `Error: ${
+              error instanceof Error ? error.message : "Unknown error occurred"
+            }`,
           },
         ],
       };
     }
   }
 
-  private async handleListTasksTool(directory?: string) {
-    const tasks = await this.listTasks(directory);
-    
+  private async handleListTasksTool(directory: string) {
+    const tasks = await listTasks(directory);
+
     return {
       content: [
         {
@@ -244,22 +100,25 @@ export class MiseMCPServer {
       task: string;
       args?: string[];
     };
-    
+
     if (!task || typeof task !== "string") {
       throw new Error("Task name is required and must be a string");
     }
 
-    const result = await this.runTask(task, taskArgs || []);
-    
+    const result = await runTask(task, taskArgs || []);
+
     return {
       content: [
         {
           type: "text",
-          text: result.success ? result.output || "Task completed successfully" : result.error || "Task failed",
+          text: result.success
+            ? result.output || "Task completed successfully"
+            : result.error || "Task failed",
         },
       ],
     };
   }
+
 
   private async handleDynamicTool(toolName: string, args: any) {
     if (!toolName || typeof toolName !== "string") {
@@ -271,32 +130,43 @@ export class MiseMCPServer {
       throw new Error("Arguments must be an array");
     }
 
-    const result = await this.runTask(toolName, taskArgs);
-    
+    const result = await runTask(toolName, taskArgs);
+
     return {
       content: [
         {
           type: "text",
-          text: result.success ? result.output || "Task completed successfully" : result.error || "Task failed",
+          text: result.success
+            ? result.output || "Task completed successfully"
+            : result.error || "Task failed",
         },
       ],
     };
   }
 
   async callTool(request: { name: string; arguments: any }) {
-    const result = await this.runTask(request.name, request.arguments?.args || []);
-    
+    const result = await runTask(
+      request.name,
+      request.arguments?.args || [],
+    );
+
     return {
       success: result.success,
       content: [
         {
           type: "text",
-          text: result.success ? result.output || "Task completed successfully" : result.error || "Task failed",
+          text: result.success
+            ? result.output || "Task completed successfully"
+            : result.error || "Task failed",
         },
       ],
     };
   }
+
+  async start() {
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
+  }
 }
 
-// For backward compatibility
 export { MiseMCPServer as MCPServer };

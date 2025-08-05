@@ -1,33 +1,11 @@
 # Example mise.toml file
 # Place this in your project root
 
-[tasks.install]
-run = "npm install"
-description = "Install dependencies"
+[tasks.hello]
+run = "echo Hello."
+description = "say hello at terminal"
 
-[tasks.build]
-run = "npm run build"
-depends = ["install"]
-description = "Build the project"
+[tasks.see-you]
+run = "echo see you."
+description = "say see you at terminal"
 
-[tasks.test]
-run = "npm test"
-depends = ["install"]
-description = "Run tests"
-
-[tasks.dev]
-run = "npm run dev"
-depends = ["install"]
-description = "Start development server"
-
-[tasks.lint]
-run = "npm run lint"
-description = "Run linter"
-
-[tasks.format]
-run = "npm run format"
-description = "Format code"
-
-[tasks.clean]
-run = "rm -rf dist node_modules"
-description = "Clean build artifacts"
