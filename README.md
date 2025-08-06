@@ -8,6 +8,7 @@
 - [ENVIRONMENT](#environment)
 - [PREPARING](#preparing)
 - [HOW TO USE](#how-to-use)
+- [FOR DEVELOPER](#for-developer)
 
 ---
 
@@ -50,23 +51,13 @@ curl https://mise.jdx.dev/install.sh | sh
 
 ## HOW TO USE
 
-### compile Deno Code
+---
+
+## FOR DEVELOPER
 
 ```shell
-cd mise-mcp-server/mcp-server
-deno run compile
-```
-
-### setup MCP Server
-
-For VS Code, edit `.vscode/mcp.json`
-
-```json
-{
-    "servers": {
-      "mise-tasks": {
-        "command": "/home/sigma/mise-mcp-server/mcp-server/bin/mise-mcp-server-linux-x64"
-      }
-    }
-  }
+cd mcp-server/
+deno lint
+deno fmt
+deno task test
 ```

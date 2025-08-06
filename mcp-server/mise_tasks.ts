@@ -14,6 +14,7 @@ export async function listTasks(directory?: string): Promise<Task[]> {
   const miseTomlPath = `${searchDir}/mise.toml`;
   try {
     const parsedTasks = await parseMiseTomlTasks(miseTomlPath);
+    // TODO: 複数のmise.tomlがある場合はマージする。現状は最初に見つかったものだけを使用する。
     tasks.push(...parsedTasks);
   } catch (error) {
     console.error(`Failed to parse mise.toml:`, error);
@@ -26,7 +27,7 @@ export async function listTasks(directory?: string): Promise<Task[]> {
  * @param {string} miseTomlPath
  * @returns {Task[]}
  */
-export async function parseMiseTomlTasks(
+async function parseMiseTomlTasks(
   miseTomlPath: string,
 ): Promise<Task[]> {
   let tomlContent: string;
@@ -50,15 +51,19 @@ export async function parseMiseTomlTasks(
   return tasks;
 }
 
-export function createToolFromTask(task: Task) {
+/**
+ * Taskを整形する
+ * @param Task
+ * @returns Task
+ */
+export function createToolFromTask(task: Task): Task {
   return {
     name: task.name,
     description: task.description || `Run ${task.name} task`,
   };
 }
 
-
-export function async runTask(taskName: string, args: string[] = []): Promise<{
+export async function runTask(taskName: string, args: string[] = []): Promise<{
   success: boolean;
   output?: string;
   error?: string;

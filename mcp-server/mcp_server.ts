@@ -5,7 +5,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import { createToolFromTask, listTasks, runTask } from "./mise.ts";
+import { createToolFromTask, listTasks, runTask } from "./mise_tasks.ts";
 
 export class MiseMCPServer {
   private server: Server;
@@ -46,11 +46,9 @@ export class MiseMCPServer {
 
   /**
    * MCP Serverで使用可能なツールの一覧をを返す。
-   * @returns {}
    */
   async getTools() {
     const tasks = await listTasks();
-
     return {
       tools: tasks.map((task) => createToolFromTask(task)),
     };
@@ -84,7 +82,6 @@ export class MiseMCPServer {
 
   private async handleListTasksTool(directory: string) {
     const tasks = await listTasks(directory);
-
     return {
       content: [
         {
@@ -118,7 +115,6 @@ export class MiseMCPServer {
       ],
     };
   }
-
 
   private async handleDynamicTool(toolName: string, args: any) {
     if (!toolName || typeof toolName !== "string") {
