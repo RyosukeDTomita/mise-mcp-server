@@ -1,5 +1,6 @@
 import { Task } from "./type.ts";
-import { parse } from "@std/toml";
+import { parse } from "https://deno.land/std@0.224.0/toml/mod.ts";
+import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 /**
  * ディレクトリを指定しない場合はカレントディレクトリ、指定した場合にはそのディレクトリからmise.tomlを探し、その中で定義されているtaskの一覧を返す。
@@ -7,17 +8,24 @@ import { parse } from "@std/toml";
  * @returns
  */
 export async function listTasks(directory?: string): Promise<Task[]> {
-  const searchDir = directory || Deno.cwd();
   const tasks: Task[] = [];
 
-  // TODO: ~/.config/mise/config.tomlはどのディレクトリにいても読み込むようにする。
-  const miseTomlPath = `${searchDir}/mise.toml`;
+  // ~/.config/mise/config.tomlを読み込む
   try {
-    const parsedTasks = await parseMiseTomlTasks(miseTomlPath);
-    // TODO: 複数のmise.tomlがある場合はマージする。現状は最初に見つかったものだけを使用する。
+    const parsedTasks = await parseMiseTomlTasks(`${Deno.env.get("HOME")}/.config/mise/config.toml`);
     tasks.push(...parsedTasks);
   } catch (error) {
-    console.error(`Failed to parse mise.toml:`, error);
+    console.warn(`Failed to parse ~/.config/mise/config.toml:`, error);
+  }
+
+  // 指定されたディレクトリからmise.tomlを探す
+  const searchDir = directory || Deno.cwd();
+  const miseTomlPath = join(searchDir, "mise.toml");
+  try {
+    const parsedTasks = await parseMiseTomlTasks(miseTomlPath);
+    tasks.push(...parsedTasks);
+  } catch (error) {
+    console.warn(`Failed to parse mise.toml:`, error);
   }
   return tasks;
 }
