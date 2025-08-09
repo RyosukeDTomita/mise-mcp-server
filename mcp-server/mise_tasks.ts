@@ -7,12 +7,12 @@ import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
  * @param directory?
  * @returns
  */
-export async function listTasks(directory?: string): Promise<Task[]> {
+export async function listTasks(directory: string, DenoReadTextFileFn: (path: string) => Promise<string>): Promise<Task[]> {
   const tasks: Task[] = [];
 
   // ~/.config/mise/config.tomlを読み込む
   try {
-    const parsedTasks = await parseMiseTomlTasks(`${Deno.env.get("HOME")}/.config/mise/config.toml`);
+    const parsedTasks = await parseMiseTomlTasks(`${Deno.env.get("HOME")}/.config/mise/config.toml`, DenoReadTextFileFn);
     tasks.push(...parsedTasks);
   } catch (error) {
     console.warn(`Failed to parse ~/.config/mise/config.toml:`, error);
@@ -22,7 +22,7 @@ export async function listTasks(directory?: string): Promise<Task[]> {
   const searchDir = directory || Deno.cwd();
   const miseTomlPath = join(searchDir, "mise.toml");
   try {
-    const parsedTasks = await parseMiseTomlTasks(miseTomlPath);
+    const parsedTasks = await parseMiseTomlTasks(miseTomlPath, DenoReadTextFileFn);
     tasks.push(...parsedTasks);
   } catch (error) {
     console.warn(`Failed to parse mise.toml:`, error);
@@ -33,14 +33,16 @@ export async function listTasks(directory?: string): Promise<Task[]> {
 /**
  * tomlファイルをパースしてTask型の配列にする
  * @param {string} miseTomlPath
+ * @param {function} DenoReadTextFileFn
  * @returns {Task[]}
  */
 async function parseMiseTomlTasks(
-  miseTomlPath: string,
+ // NOTE: テストのしやすさのために、Deno.readTextFileがモックできるように依存性注入を行っている。
+  miseTomlPath: string, DenoReadTextFileFn: (path: string) => Promise<string>
 ): Promise<Task[]> {
   let tomlContent: string;
   try {
-    tomlContent = await Deno.readTextFile(miseTomlPath);
+    tomlContent = await DenoReadTextFileFn(miseTomlPath);
   } catch (error) {
     console.error(`Error reading ${miseTomlPath}:`, error);
     throw new Error(`Failed to read ${miseTomlPath}: ${error}`);
