@@ -1,11 +1,9 @@
 import { assertEquals, assertInstanceOf } from "https://deno.land/std@0.224.0/assert/mod.ts";
-// import { MiseMCPServer } from "./mcp_server.ts";
-import { listTasks } from "./mise_tasks.ts";
-import { skip } from "node:test";
+import { listTasks, runTask } from "./mise_tasks.ts";
+import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 Deno.test("listTasks should return available mise tasks, when called with a directory contains mise.toml", async () => {
   const tasks = await listTasks("./test-fixtures/", Deno.readTextFile);
-  // 配列が返されることを確認
   assertInstanceOf(tasks, Array);
   
   // tasks配列のどれか一つの.name要素に./test-fixtures/mise.tomlに定義されているタスク名が含まれていることを確認
@@ -17,10 +15,9 @@ Deno.test("listTasks should return available mise tasks, when called with a dire
 });
 
 Deno.test("listTasks should return available mise tasks defined in ~/.config/mise/config.toml", async () => {
-  // ~/.config/mise/config.tomlをモックすることで、ユーザのホームディレクトリに依存せずにテストを実行できるようになる。
-  // モックされたDeno.readTextFile関数は~/.config/mise/config.tomlを返すようにする。
+  // ~/.config/mise/config.tomlをモックすることで、ユーザのホームディレクトリに依存せずにテストを実行できるようにしている。
   const mockDenoReadTextFile = async (path: string) => {
-    if (path === "./not-existing-directory") {
+    if (path === `${Deno.env.get("HOME")}/.config/mise/config.toml`) {
       return `
 # Example config.toml file
 
@@ -36,8 +33,8 @@ description = "see you ~/.config/mise/config.toml"
     return await Deno.readTextFile(path);
   };
 
+  // ~/.config/mise/config.tomlからタスクを取得できるか確認するために、存在しないディレクトリを指定している。
   const tasks = await listTasks("./not-existing-directory", mockDenoReadTextFile);
-  // 配列が返されることを確認
   assertInstanceOf(tasks, Array);
 
   // tasks配列のどれか一つの.name要素に~/.config/mise/config.tomlに定義されているタスク名が含まれていることを確認
@@ -46,4 +43,11 @@ description = "see you ~/.config/mise/config.toml"
   // helloタスクのdescriptionがMocked Deno.readTextFile関数によって返された内容と一致するか確認
   const helloTask = tasks.find(task => task.name === "hello");
   assertEquals(helloTask?.description, "hello ~/.config/mise/config.toml");
+});
+
+Deno.test("runTask should execute a task and return the result", async () => {
+  const taskWorkDir = join(Deno.cwd(), "test-fixtures");
+  const result = await runTask("hello", taskWorkDir);
+  assertEquals(result.success, true);
+  assertEquals(result.output, "Hello test-fixtures/mise.toml.\n");
 });

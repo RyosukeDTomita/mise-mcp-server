@@ -4,10 +4,10 @@ import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 /**
  * ディレクトリを指定しない場合はカレントディレクトリ、指定した場合にはそのディレクトリからmise.tomlを探し、その中で定義されているtaskの一覧を返す。
- * @param directory?
+ * @param taskWorkDir
  * @returns
  */
-export async function listTasks(directory: string, DenoReadTextFileFn: (path: string) => Promise<string>): Promise<Task[]> {
+export async function listTasks(taskWorkDir: string, DenoReadTextFileFn: (path: string) => Promise<string>): Promise<Task[]> {
   const tasks: Task[] = [];
 
   // ~/.config/mise/config.tomlを読み込む
@@ -19,7 +19,7 @@ export async function listTasks(directory: string, DenoReadTextFileFn: (path: st
   }
 
   // 指定されたディレクトリからmise.tomlを探す
-  const searchDir = directory || Deno.cwd();
+  const searchDir = taskWorkDir || Deno.cwd();
   const miseTomlPath = join(searchDir, "mise.toml");
   try {
     const parsedTasks = await parseMiseTomlTasks(miseTomlPath, DenoReadTextFileFn);
@@ -73,54 +73,50 @@ export function createToolFromTask(task: Task): Task {
   };
 }
 
-export async function runTask(taskName: string, args: string[] = []): Promise<{
+/**
+ * miseを使ってタスクを実行する。
+ * @param taskName
+ * @param taskWorkDir
+ * @returns
+ */
+export async function runTask(taskName: string, taskWorkDir: string): Promise<{
   success: boolean;
   output?: string;
   error?: string;
-}> {
+  }> {
+  const currentDir = Deno.cwd();
+  Deno.chdir(taskWorkDir);
   try {
-    // For testing purposes, if taskName is 'echo' or 'nonexistent-command',
-    // run them directly. Otherwise, use mise to run the task
-    if (taskName === "echo" || taskName === "nonexistent-command") {
-      const command = new Deno.Command(taskName, {
-        args,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const { code, stdout, stderr } = await command.output();
-
-      const output = new TextDecoder().decode(stdout);
-      const error = new TextDecoder().decode(stderr);
-
-      return {
-        success: code === 0,
-        output: output || undefined,
-        error: code !== 0 ? error || "Task failed" : undefined,
-      };
-    }
-
-    // Use mise to run the task
+    // mise run <taskName>
     const command = new Deno.Command("mise", {
-      args: ["run", taskName, ...args],
+      args: ["run", taskName],
       stdout: "piped",
       stderr: "piped",
     });
 
     const { code, stdout, stderr } = await command.output();
-
     const output = new TextDecoder().decode(stdout);
     const error = new TextDecoder().decode(stderr);
 
+    // clean up
+    Deno.chdir(currentDir);
+
+    const is_success = code === 0;
+    if (!is_success) {
+      console.error(`Task ${taskName} failed with error:`, error);
+    }
     return {
-      success: code === 0,
+      success: is_success,
       output: output || undefined,
-      error: code !== 0 ? error || "Task failed" : undefined,
+      error: error || undefined
     };
-  } catch (error) {
+  } catch (e) {
+    Deno.chdir(currentDir);
+    console.error(`Failed to run task ${taskName}:`, e);
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      output: "No output",
+      error: `Failed to run task ${taskName}, error: ${e}`
     };
   }
 }
