@@ -1,0 +1,10 @@
+# Example mise.toml file
+# Place this in your project root
+
+[tasks.hello]
+run = "echo Hello test-fixtures/mise.toml."
+description = "hello test-fixtures/mise.toml"
+
+[tasks.see-you]
+run = "echo see you test-fixtures/mise.toml."
+description = "see you test-fixtures/mise.toml"
