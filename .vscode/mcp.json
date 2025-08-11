@@ -1,8 +1,9 @@
 {
-  "servers": {
-    "mise-tasks": {
-      "command": "npx",
-      "args": ["-y", "github:RyosukeDTomita/mise-mcp-server/mcp-server"]
+    "servers": {
+      "mise-tasks": {
+        "cwd": "/home/sigma/mise-mcp-server/mcp-server",
+        "command": "deno",
+        "args": ["task", "dev", "--dir", "/home/sigma/mise-mcp-server/mcp-server/test-fixtures"]
+      }
     }
-  },
-}
+  }
