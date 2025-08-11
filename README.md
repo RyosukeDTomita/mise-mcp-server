@@ -51,9 +51,41 @@ curl https://mise.jdx.dev/install.sh | sh
 
 ## HOW TO USE
 
+> [!WARN]
+> `mise` cannot run tasks before `mise trust`.
+> Before running this MCP Server, You should run command below.
+>
+> ```shell
+> mise trust <your dir>
+> ````
+
+```shell
+# list tools
+echo '{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}' | deno task dev --dir /home/sigma/mise-mcp-server/mcp-server/test-fixtures;
+Task dev deno run --watch --allow-env=HOME --allow-read --allow-write --allow-run main.ts "--dir" "/home/sigma/mise-mcp-server/mcp-server/test-fixtures"
+Watcher Process started.
+{"result":{"tools":[{"name":"restart-alsa","description":"Restart ALSA to fix the audio output issue"},{"name":"hello","description":"hello test-fixtures/mise.toml"},{"name":"see-you","description":"see you test-fixtures/mise.toml"}]},"jsonrpc":"2.0","id":2}
+```
+
+```shell
+# use tools
+echo '{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "hello", "arguments": {}}}' | deno task dev --dir /home/sigma/mise-mcp-server/mcp-server/test-fixtures;
+Task dev deno run --watch --allow-env=HOME --allow-read --allow-write --allow-run main.ts "--dir" "/home/sigma/mise-mcp-server/mcp-server/test-fixtures"
+Watcher Process started.
+{"result":{"success":true,"content":[{"type":"text","text":"Hello test-fixtures/mise.toml.\n"}]},"jsonrpc":"2.0","id":2}
+Watcher Process finished. Restarting on file change...
+```
+
 ---
 
 ## FOR DEVELOPER
+
+```shell
+cd mcp-server/test-fixtures/
+mise trust
+```
+
+### Commands
 
 ```shell
 cd mcp-server/

@@ -1,7 +1,9 @@
 {
     "servers": {
       "mise-tasks": {
-        "command": "/home/sigma/mise-mcp-server/mcp-server/bin/mise-mcp-server-linux-x64"
+        "cwd": "/home/sigma/mise-mcp-server/mcp-server",
+        "command": "deno",
+        "args": ["task", "dev", "--dir", "/home/sigma/mise-mcp-server/mcp-server/test-fixtures"]
       }
     }
   }
